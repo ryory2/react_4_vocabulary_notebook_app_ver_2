@@ -1,0 +1,27 @@
+# .dockerignore
+
+# 依存関係フォルダ (最重要)
+node_modules
+
+# ログファイル
+npm-debug.log
+yarn-error.log
+
+# Docker関連ファイル (ビルドコンテキストに含める必要はない)
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Git関連
+.git
+.gitignore
+
+# VS Code設定
+.vscode
+
+# ビルド成果物 (コンテナ内で生成するため不要)
+build
+dist
+
+# その他 (任意)
+*.md

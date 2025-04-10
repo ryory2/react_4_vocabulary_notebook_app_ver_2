@@ -1,0 +1,51 @@
+# .github/workflows/deploy.yml
+name: Deploy to S3 + CloudFront
+
+on:
+  workflow_dispatch: # 手動実行用のトリガーを追加
+  push:
+    branches: ["main"] # mainブランチにpushされた場合に実行
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Use Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18 # Node.jsのバージョンに合わせる
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build # Reactのビルド
+
+      - name: Configure AWS credentials
+        # 公式のAWS Actions（OIDC連携 or シークレット）を設定
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::990606419933:role/github_actions_role
+          aws-region: ap-northeast-1 # リージョンを合わせる
+
+      - name: Sync build folder to S3
+        run: aws s3 sync dist/ s3://my-react-spa-bucket-example-2023 --delete
+
+      - name: Get CloudFront Distribution ID
+        id: get-cloudfront-id
+        run: |
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[0]=='${{ env.CLOUDFRONT_DOMAIN }}'].Id" --output text)
+          echo "cloudfront_id=${DISTRIBUTION_ID}" >> $GITHUB_OUTPUT
+        env:
+          CLOUDFRONT_DOMAIN: impierrot.click # ドメイン名を設定
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ steps.get-cloudfront-id.outputs.cloudfront_id }} --paths "/*"

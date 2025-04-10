@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --c-blue-100: #f0f7ff;
+        --c-blue-200: #ecf5ff;
+        --c-blue-300: #e0efff;
+        --c-blue-400: #bfdcff;
+        --c-blue-500: #3ea8ff;
+        --c-blue-600: #0f83fd;
+        --c-blue-700: #0868ce;
+        --c-gray-100: #f5f9fc;
+        --c-gray-200: #f1f5f9;
+        --c-gray-300: #edf2f7;
+        --c-gray-400: #e4edf4;
+        --c-gray-500: #d6e3ed;
+        --c-gray-600: #acbcc7;
+        --c-gray-700: #8f9faa;
+        --c-gray-800: #65717b;
+        --c-general-primary: var(--c-blue-500);
+        --c-general-secondary: #807aff;
+        --c-general-alert: #ff6868;
+        --c-general-like: #f76685;
+        --c-button-primary: var(--c-blue-500);
+        --c-button-primary-hover: var(--c-blue-600);
+        --c-text-body: #000000d1;
+        --c-text-low-priority: var(--c-gray-800);
+        --c-text-lower-priority: var(--c-gray-700);
+        --c-text-link-primary: var(--c-blue-600);
+        --c-bg-base: #fff;
+        --c-bg-neutral: var(--c-gray-300);
+        --c-bg-neutral-lighter: var(--c-gray-200);
+        --c-bg-neutral-lightest: var(--c-gray-100);
+        --c-bg-primary: var(--c-blue-300);
+        --c-bg-primary-lighter: var(--c-blue-200);
+        --c-bg-secondary: #f3f2ff;
+        --c-bg-alert: #fff0f0;
+        --c-bg-like: #ffeaf4;
+        --c-neutral-border: var(--c-gray-500);
+        --c-neutral-border-lighter: var(--c-gray-400);
+        --c-focus-shadow: var(--c-blue-400);
+        --c-selection-highlight: #ffdc0059;
+        --font-base: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif, "Segoe UI Emoji";
+        --font-code: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace, "Segoe UI Emoji";
+        --font-latin-hero: "Inter", BlinkMacSystemFont, Arial, sans-serif;
+        --spacing-3xs: 0.25rem;
+        --spacing-xxs: 0.5rem;
+        --spacing-xs: 1rem;
+        --spacing-sm: 1.5rem;
+        --spacing-md: 2rem;
+        --spacing-lg: 2.5rem;
+        --spacing-xl: 3rem;
+        --spacing-xxl: 4rem;
+        --rounded-xxs: 2px;
+        --rounded-xs: 4px;
+        --rounded-sm: 7px;
+        --rounded-md: 10px;
+        --rounded-lg: 14px;
+        --rounded-xl: 20px;
+        --rounded-full: 99rem;
+        --rounded-publication: 25%;
+        --header-height: 62px
+    }
+}

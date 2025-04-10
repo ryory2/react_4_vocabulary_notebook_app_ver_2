@@ -1,0 +1,23 @@
+services:  # サービス定義の開始です。ここではpostgresとpgadminの2つのサービスを定義します。
+  node_app:  # "java_app"という名前のサービスを定義します。
+    build:
+      context: ./../ # プロジェクトルートに設定
+      dockerfile: docker/services/node/Dockerfile
+      target: production # ★★★ 開発用ステージを指定 ★★★
+      args:
+        - NODE_VERSION=18
+    container_name: myapp_prod_app
+    env_file:
+      - ./env/.env.prod       # 本番用環境変数ファイルを読み込む
+    ports:
+      - "8080:80"
+    networks:
+      - my-network
+    volumes:
+      - ../.:/app
+      # node_modules をホストと分離 (重要)
+      - /app/node_modules
+      # ビルドディレクトリもホストと分離 (CRAの場合 build, Viteの場合 dist)
+      - /app/dist
+networks:
+  my-network:
