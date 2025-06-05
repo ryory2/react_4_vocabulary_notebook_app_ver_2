@@ -95,7 +95,7 @@ npm install --save-dev json-server
 ## ルーティングファイル
 /json-server/routes.jsonを作成
 ## 起動(--watch：ポーリング)
-npx json-server --watch json-server/db.json --routes json-server/routes.json --port 80
+npx json-server --watch json-server/db.json --routes json-server/routes.json --port 8080
 curl localhost:8080/words
 ## 確認
 ### 読み込み

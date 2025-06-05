@@ -10,7 +10,7 @@ services:  # サービス定義の開始です。ここではpostgresとpgadmin�
     env_file:
       - ./env/.env.prod       # 本番用環境変数ファイルを読み込む
     ports:
-      - "8080:80"
+      - "3000:3000"
     networks:
       - my-network
     volumes:

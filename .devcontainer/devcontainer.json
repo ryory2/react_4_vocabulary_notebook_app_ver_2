@@ -14,12 +14,12 @@
 	// "stopCompose": `docker-compose down` を実行。全てのサービスを停止。
 	// "stopContainer": 開発コンテナのみ停止。
 	// "none": 何もしない。
-	// "workspaceFolder": "/app", // コンテナ内のワークスペースディレクトリ。プロジェクトのルートディレクトリがここにマウントされます。 コンテナ内の絶対パス。
-	"workspaceFolder": "/", // コンテナ内のワークスペースディレクトリ。プロジェクトのルートディレクトリがここにマウントされます。 コンテナ内の絶対パス。
+	"workspaceFolder": "/app", // コンテナ内のワークスペースディレクトリ。プロジェクトのルートディレクトリがここにマウントされます。 コンテナ内の絶対パス。
+	// "workspaceFolder": "/", // コンテナ内のワークスペースディレクトリ。プロジェクトのルートディレクトリがここにマウントされます。 コンテナ内の絶対パス。
 	"forwardPorts": [ // コンテナのポートをローカルマシンに転送します。
 		3000 // Go アプリケーションが listen するポート。 ローカルポート:コンテナポート の形式で指定可能 (例: `8081:8080`)。省略時は同じポート番号。
 	],
-	// "postCreateCommand": "npm install", // コンテナ作成後に実行されるコマンド。 air を使用してホットリロードを実現します。 任意のコマンド、またはスクリプト。
+	"postCreateCommand": "npm install --save-dev json-server & npx json-server --watch json-server/db.json --routes json-server/routes.json --port 8080", // コンテナ作成後に実行されるコマンド。 air を使用してホットリロードを実現します。 任意のコマンド、またはスクリプト。
 	"customizations": { // VS Code のカスタマイズ設定
 		"vscode": {
 			// コンテナ作成時に settings.json に設定されるデフォルト値。

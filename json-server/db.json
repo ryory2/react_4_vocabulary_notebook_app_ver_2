@@ -1,22 +1,25 @@
 {
-    "words": [
-        {
-            "id": 1,
-            "question": "apple",
-            "answer": "りんご",
-            "level": 0
-        },
-        {
-            "id": 2,
-            "question": "banana",
-            "answer": "バナナ",
-            "level": 1
-        },
-        {
-            "id": 3,
-            "question": "grape",
-            "answer": "ぶどう",
-            "level": 2
-        }
-    ]
+  "words": [
+    {
+      "id": 1,
+      "question": "apple",
+      "answer": "りんご",
+      "level": 1,
+      "deletedAt": null
+    },
+    {
+      "id": 2,
+      "question": "banana",
+      "answer": "バナナ",
+      "level": 1,
+      "deletedAt": null
+    },
+    {
+      "id": 3,
+      "question": "grape",
+      "answer": "ぶどう",
+      "level": 2,
+      "deletedAt": null
+    }
+  ]
 }
