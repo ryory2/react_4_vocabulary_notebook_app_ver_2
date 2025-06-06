@@ -1,5 +1,3 @@
-// src/components/admin/WordListItem.tsx
-
 import React, { useState, ChangeEvent } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Word } from '../../types/word';
@@ -18,27 +16,24 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
     const [editingterm, setEditingterm] = useState(word.term);
     const [editingdefinition, setEditingdefinition] = useState(word.definition);
 
-    // 状態フラグ
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // モーダル管理
     const [isUpdateConfirmOpen, setIsUpdateConfirmOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
-    // 更新対象の情報を保持
     const [updatePayload, setUpdatePayload] = useState<{ field: 'term' | 'definition'; value: string } | null>(null);
 
-    // 内容が変更されたかどうかを判定するフラグ
+    const [isTermExpanded, setIsTermExpanded] = useState(false);
+    const [isDefinitionExpanded, setIsDefinitionExpanded] = useState(false);
+
     const hasChanges = word.term !== editingterm || word.definition !== editingdefinition;
 
     // --- ハンドラ関数 ---
 
-    // 更新ボタンがクリックされたらモーダルを開く
     const handleUpdateClick = () => {
         if (!hasChanges) return;
 
-        // どちらか一方のフィールドが変更されていることを想定
         let payload: { field: 'term' | 'definition'; value: string } | null = null;
         if (word.term !== editingterm) {
             payload = { field: 'term', value: editingterm };
@@ -52,7 +47,6 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
         }
     };
 
-    // 更新モーダルで「実行」が押された時の処理
     const handleConfirmUpdate = async () => {
         if (!updatePayload) return;
 
@@ -65,7 +59,6 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
         } catch (error) {
             setIsUpdateConfirmOpen(false);
             console.error(`Failed to update ${updatePayload.field}:`, error);
-            // エラー時に値を元の状態に戻す
             if (updatePayload.field === 'term') setEditingterm(word.term);
             if (updatePayload.field === 'definition') setEditingdefinition(word.definition);
 
@@ -77,12 +70,10 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
         }
     };
 
-    // 削除ボタンが押されたらモーダルを開く
     const handleDeleteClick = () => {
         setIsDeleteConfirmOpen(true);
     };
 
-    // 削除モーダルで「実行」が押された時の処理
     const handleConfirmDelete = async () => {
         setIsDeleting(true);
         try {
@@ -111,31 +102,53 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
             `}>
                 <td className="block md:table-cell p-2 md:py-3 md:px-4" data-label="単語">
                     <span className="font-bold text-sm text-gray-600 md:hidden">単語</span>
-                    <TextareaAutosize
-                        value={editingterm}
-                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingterm(e.target.value)}
-                        className={`w-full mt-1 p-2 border rounded resize-none focus:ring-blue-500 focus:border-blue-500`}
-                        disabled={!!word.deletedAt || isUpdating || isDeleting}
-                        minRows={1}
-                    />
+                    <div>
+                        <TextareaAutosize
+                            value={editingterm}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingterm(e.target.value)}
+                            className={`w-full mt-1 p-2 border rounded resize-none focus:ring-blue-500 focus:border-blue-500`}
+                            disabled={!!word.deletedAt || isUpdating || isDeleting}
+                            minRows={1}
+                            maxRows={isTermExpanded ? 10 : 1}
+                        />
+                        {editingterm.includes('\n') && (
+                            <button
+                                onClick={() => setIsTermExpanded(!isTermExpanded)}
+                                className="text-xs px-2 py-1 mt-1 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                            >
+                                {isTermExpanded ? '閉じる' : 'すべて表示'}
+                            </button>
+                        )}
+                    </div>
                 </td>
                 <td className="block md:table-cell p-2 md:py-3 md:px-4" data-label="意味">
                     <span className="font-bold text-sm text-gray-600 md:hidden">意味</span>
-                    <TextareaAutosize
-                        value={editingdefinition}
-                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingdefinition(e.target.value)}
-                        className={`w-full mt-1 p-2 border rounded resize-none focus:ring-blue-500 focus:border-blue-500`}
-                        disabled={!!word.deletedAt || isUpdating || isDeleting}
-                        minRows={1}
-                    />
+                    <div>
+                        <TextareaAutosize
+                            value={editingdefinition}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingdefinition(e.target.value)}
+                            className={`w-full mt-1 p-2 border rounded resize-none focus:ring-blue-500 focus:border-blue-500`}
+                            disabled={!!word.deletedAt || isUpdating || isDeleting}
+                            minRows={1}
+                            maxRows={isDefinitionExpanded ? 10 : 1}
+                        />
+                        {editingdefinition.includes('\n') && (
+                            <button
+                                onClick={() => setIsDefinitionExpanded(!isDefinitionExpanded)}
+                                className="text-xs px-2 py-1 mt-1 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                            >
+                                {isDefinitionExpanded ? '閉じる' : 'すべて表示'}
+                            </button>
+                        )}
+                    </div>
                 </td>
                 <td className="block md:table-cell p-2 md:py-3 md:px-4 text-center">
                     <div className="flex flex-col md:flex-row md:items-center justify-center gap-2">
                         <button
                             onClick={handleUpdateClick}
                             className={`w-full md:w-auto px-4 py-2 text-sm rounded transition-colors ${hasChanges && !word.deletedAt
-                                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}
                             disabled={!hasChanges || !!word.deletedAt || isUpdating || isDeleting}
                         >
@@ -144,8 +157,8 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                         <button
                             onClick={handleDeleteClick}
                             className={`w-full md:w-auto px-4 py-2 text-sm rounded transition-colors ${word.deletedAt
-                                ? 'bg-gray-400 text-white cursor-not-allowed'
-                                : 'bg-red-500 text-white hover:bg-red-600'
+                                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                                    : 'bg-red-500 text-white hover:bg-red-600'
                                 }`}
                             disabled={!!word.deletedAt || isUpdating || isDeleting}
                         >
