@@ -1,3 +1,5 @@
+// src/pages/AdminPage.tsx
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { Word } from '../types/word';
 import { getWords, createWord } from '../services/wordApi';
@@ -12,21 +14,13 @@ const AdminPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isCreating, setIsCreating] = useState<boolean>(false);
 
-    // エラーモーダル用
     const [isErrorModalOpen, setIsErrorModalOpen] = useState<boolean>(false);
     const [modalErrorTitle, setModalErrorTitle] = useState<string>('');
     const [modalErrorMessage, setModalErrorMessage] = useState<string | null>(null);
 
-    // 成功通知トースト用
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-    // 新規登録フォームの表示/非表示用
     const [isFormVisible, setIsFormVisible] = useState<boolean>(false);
-
-    // ソート設定用
     const [sortConfig, setSortConfig] = useState<{ key: keyof Word; direction: 'asc' | 'desc' } | null>(null);
-
-    // 検索キーワード用
     const [searchTerm, setSearchTerm] = useState<string>('');
 
     // --- エフェクトフック ---
@@ -70,15 +64,17 @@ const AdminPage: React.FC = () => {
         }
     };
 
-    const handleWordUpdate = (updatedWord: Word) => {
+    // ★ handleWordUpdate で成功メッセージを受け取るように修正
+    const handleWordUpdate = (updatedWord: Word, successMessage: string) => {
         setWords(prevWords =>
             prevWords.map(w => (w.word_id === updatedWord.word_id ? updatedWord : w))
         );
+        setSuccessMessage(successMessage);
     };
 
-    const handleWordDelete = (deletedWordId: string, message: string) => {
+    const handleWordDelete = (deletedWordId: string, successMessage: string) => {
         setWords(prevWords => prevWords.filter(w => w.word_id !== deletedWordId));
-        setSuccessMessage(message);
+        setSuccessMessage(successMessage);
     };
 
     const handleCreateWord = async (term: string, definition: string) => {
@@ -110,7 +106,6 @@ const AdminPage: React.FC = () => {
     const filteredAndSortedWords = useMemo(() => {
         let processedWords = [...words];
 
-        // 1. フィルタリング
         if (searchTerm.trim() !== '') {
             const lowercasedFilter = searchTerm.toLowerCase();
             processedWords = processedWords.filter(word =>
@@ -119,7 +114,6 @@ const AdminPage: React.FC = () => {
             );
         }
 
-        // 2. ソート
         if (sortConfig !== null) {
             const currentSortConfig = sortConfig;
             processedWords.sort((a, b) => {
