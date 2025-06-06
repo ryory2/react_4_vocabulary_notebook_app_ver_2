@@ -147,8 +147,8 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                         <button
                             onClick={handleUpdateClick}
                             className={`w-full md:w-auto px-4 py-2 text-sm rounded transition-colors ${hasChanges && !word.deletedAt
-                                    ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}
                             disabled={!hasChanges || !!word.deletedAt || isUpdating || isDeleting}
                         >
@@ -157,8 +157,8 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                         <button
                             onClick={handleDeleteClick}
                             className={`w-full md:w-auto px-4 py-2 text-sm rounded transition-colors ${word.deletedAt
-                                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                                    : 'bg-red-500 text-white hover:bg-red-600'
+                                ? 'bg-gray-400 text-white cursor-not-allowed'
+                                : 'bg-red-500 text-white hover:bg-red-600'
                                 }`}
                             disabled={!!word.deletedAt || isUpdating || isDeleting}
                         >
