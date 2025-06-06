@@ -1,5 +1,4 @@
-// src/pages/AdminPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Word } from '../types/word';
 import { getWords, createWord } from '../services/wordApi';
 import WordListItem from '../components/admin/WordListItem';
@@ -8,19 +7,43 @@ import ErrorModal from '../components/common/ErrorModal';
 import SuccessToast from '../components/common/SuccessToast';
 
 const AdminPage: React.FC = () => {
+    // --- State管理 ---
     const [words, setWords] = useState<Word[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    // const [error, setError] = useState<string | null>(null);
-    // const [filterDeleted, setFilterDeleted] = useState<boolean>(false);
     const [isCreating, setIsCreating] = useState<boolean>(false);
+
+    // エラーモーダル用
     const [isErrorModalOpen, setIsErrorModalOpen] = useState<boolean>(false);
     const [modalErrorTitle, setModalErrorTitle] = useState<string>('');
     const [modalErrorMessage, setModalErrorMessage] = useState<string | null>(null);
-    // 成功時のトースト
+
+    // 成功通知トースト用
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    // フォームの表示状態を管理するState
+
+    // 新規登録フォームの表示/非表示用
     const [isFormVisible, setIsFormVisible] = useState<boolean>(false);
 
+    // ソート設定用
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Word; direction: 'asc' | 'desc' } | null>(null);
+
+    // 検索キーワード用
+    const [searchTerm, setSearchTerm] = useState<string>('');
+
+    // --- エフェクトフック ---
+    useEffect(() => {
+        fetchWords();
+    }, []);
+
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+
+    // --- データ操作・ハンドラ関数 ---
     const openErrorModal = (title: string, message: string) => {
         setModalErrorTitle(title);
         setModalErrorMessage(message);
@@ -29,40 +52,18 @@ const AdminPage: React.FC = () => {
 
     const closeErrorModal = () => {
         setIsErrorModalOpen(false);
-        // オプション: モーダルを閉じたらメッセージもクリア
-        // setModalErrorMessage(null);
-        // setModalErrorTitle('');
     };
-    // レンダリング完了後、一度だけ呼び出される
-    useEffect(() => {
-        fetchWords();
-    }, []);
-
-    // ★ successMessageが変更されたらタイマーをセットするuseEffectを追加
-    useEffect(() => {
-        if (successMessage) {
-            const timer = setTimeout(() => {
-                setSuccessMessage(null); // 3秒後にメッセージをクリア
-            }, 3000); // 3000ミリ秒 = 3秒
-
-            // コンポーネントがアンマウントされる時にタイマーをクリアするクリーンアップ関数
-            return () => clearTimeout(timer);
-        }
-    }, [successMessage]); // 依存配列にsuccessMessageを指定
 
     const fetchWords = async () => {
         setIsLoading(true);
-        // setError(null); // ★コメントアウトまたは削除検討
         try {
             const data = await getWords();
             setWords(data);
-            if (isErrorModalOpen) closeErrorModal(); // ★成功したら既存のエラーモーダルを閉じる
-        } catch (err) { // any型または適切なエラー型を指定
+            if (isErrorModalOpen) closeErrorModal();
+        } catch (err) {
             console.error('Failed to fetch words:', err);
             let errorMessage = '単語の読み込みに失敗しました。';
-            if (err instanceof Error) { // ★ Error 型か確認
-                errorMessage = err.message; // wordApiからスローされたメッセージを利用
-            }
+            if (err instanceof Error) errorMessage = err.message;
             openErrorModal('読込エラー', errorMessage);
         } finally {
             setIsLoading(false);
@@ -75,140 +76,183 @@ const AdminPage: React.FC = () => {
         );
     };
 
-    // const handleWordDelete = (deletedWordId: number) => { // 引数を受け取るように修正
-    const handleWordDelete = (deletedWordId: string, successMessage: string) => {
-        // 1. 画面上のリストから削除された単語を即座に取り除く
+    const handleWordDelete = (deletedWordId: string, message: string) => {
         setWords(prevWords => prevWords.filter(w => w.word_id !== deletedWordId));
-
-        // 2. 成功メッセージのトーストを表示する
-        setSuccessMessage(successMessage);
+        setSuccessMessage(message);
     };
-
 
     const handleCreateWord = async (term: string, definition: string) => {
         try {
             const newWordData = { term, definition };
             const createdWord = await createWord(newWordData);
             setWords(prevWords => [createdWord, ...prevWords]);
-            // if (error) setError(null); // ★コメントアウトまたは削除検討
-            if (isErrorModalOpen) closeErrorModal(); // ★成功したら既存のエラーモーダルを閉じる
+            if (isErrorModalOpen) closeErrorModal();
             setSuccessMessage(`「${term}」を登録しました。`);
-            setIsFormVisible(false);
-        } catch (err) { // ★型指定を削除 (unknownとして扱われる)
+        } catch (err) {
             console.error('Failed to create word:', err);
             let errorMessage = '新しい単語の登録に失敗しました。';
-            if (err instanceof Error) { // ★ Error 型か確認
-                errorMessage = err.message; // wordApiからスローされたメッセージを利用
-            }
+            if (err instanceof Error) errorMessage = err.message;
             openErrorModal('登録エラー', errorMessage);
-
-            // NewWordForm側で isCreating をリセットするなどのためにエラーを再スローする場合
-            if (err instanceof Error) { // ★ Errorインスタンスならそのままスロー
-                throw err;
-            } else {
-                // もし Error インスタンスでなければ、メッセージを元に新しいErrorとしてスロー
-                throw new Error(errorMessage);
-            }
+            if (err instanceof Error) throw err;
+            else throw new Error(errorMessage);
         }
     };
 
-    // const filteredWords = filterDeleted ? words.filter(word => !word.deletedAt) : words;
+    const requestSort = (key: keyof Word) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
-    // ▼▼▼ 変更点1: 全画面ローディング/エラーの早期リターンを削除 ▼▼▼
-    // if (isLoading && words.length === 0) {
-    //     return <div className="text-center py-10">読み込み中...</div>;
-    // }
-    // if (error && words.length === 0) {
-    //     return <div className="text-center py-10 text-red-500">{error}</div>;
-    // }
-    // ▲▲▲ 変更点1 ▲▲▲
+    // --- 表示用データの計算 (useMemo) ---
+    const filteredAndSortedWords = useMemo(() => {
+        let processedWords = [...words];
+
+        // 1. フィルタリング
+        if (searchTerm.trim() !== '') {
+            const lowercasedFilter = searchTerm.toLowerCase();
+            processedWords = processedWords.filter(word =>
+                word.term.toLowerCase().includes(lowercasedFilter) ||
+                word.definition.toLowerCase().includes(lowercasedFilter)
+            );
+        }
+
+        // 2. ソート
+        if (sortConfig !== null) {
+            const currentSortConfig = sortConfig;
+            processedWords.sort((a, b) => {
+                const valA = a[currentSortConfig.key] || '';
+                const valB = b[currentSortConfig.key] || '';
+                if (valA < valB) return currentSortConfig.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return processedWords;
+    }, [words, searchTerm, sortConfig]);
+
 
     return (
         <div className="container mx-auto p-4">
+            {/* --- 通知・モーダルエリア --- */}
             <SuccessToast
                 message={successMessage}
-                onClose={() => setSuccessMessage(null)} // 閉じるボタンで即座に消せるように
+                onClose={() => setSuccessMessage(null)}
             />
-            <h1 className="text-2xl font-bold mb-6">単語管理</h1>
-
-            <div className="mb-4 flex justify-between items-center">
-                <button
-                    onClick={fetchWords}
-                    disabled={isLoading}
-                    className={`px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                    {/* isLoadingのみで判定するように変更 */}
-                    {isLoading ? '更新中...' : '再読み込み'}
-                </button>
-                {!isFormVisible && (
-                    <button
-                        onClick={() => setIsFormVisible(true)}
-                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                    >
-                        新しい単語を登録する
-                    </button>
-                )}
-            </div>
-
-            {/* ▼▼▼ 変更点2: エラーメッセージの表示位置 ▼▼▼ */}
-            {/* 既存のテキストエラー表示はモーダルで代替するためコメントアウトまたは削除 */}
-            {/* {error && !isErrorModalOpen && <div className="mb-4 text-red-500 bg-red-100 border border-red-400 p-3 rounded text-center">{error}</div>} */}
-
-            {/* ... (テーブルなどの他のJSX) ... */}
-
-            {/* ★エラーモーダルコンポーネントをレンダリング (returnの最後の方、メインコンテンツの後が良い) */}
             <ErrorModal
                 isOpen={isErrorModalOpen}
                 onClose={closeErrorModal}
                 title={modalErrorTitle}
                 message={modalErrorMessage}
             />
-            {/* ▲▲▲ 変更点2 ▲▲▲ */}
 
-            {/* ▼▼▼ 変更点3: テーブル表示の構造と条件分岐 ▼▼▼ */}
-            <div className="overflow-x-auto shadow-md rounded-lg">
-                <table className="min-w-full bg-white">
-                    <thead className="bg-gray-100">
-                        {/* ★ 変更点: スマホでは非表示にする */}
-                        <tr className="hidden md:table-row">
-                            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">単語</th>
-                            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">意味</th>
-                            <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                        </tr>
-                    </thead>
-                    {/* ★ 変更点: スマホでのレイアウトを考慮したスタイルを追加 */}
-                    <tbody className="divide-y divide-gray-200 md:divide-y-0">
-                        {isFormVisible && (
-                            <NewWordForm
-                                onWordCreate={handleCreateWord}
-                                isCreating={isCreating}
-                                setIsCreating={setIsCreating}
-                                onClose={() => setIsFormVisible(false)} // ★ onCloseプロパティを渡す
-                            />
-                        )}
-                        {!isLoading && words.map((word) => (
-                            <WordListItem
-                                key={word.word_id}
-                                word={word}
-                                onWordUpdate={handleWordUpdate}
-                                onWordDelete={handleWordDelete}
-                                openErrorModal={openErrorModal}
-                            />
-                        ))}
-                    </tbody>
-                </table>
+            <h1 className="text-2xl font-bold mb-6">単語管理</h1>
+
+            {/* --- 1. 新規登録エリア --- */}
+            <div className="mb-6">
+                <div className="flex justify-end">
+                    <button
+                        onClick={() => setIsFormVisible(!isFormVisible)}
+                        className={`px-4 py-2 text-white rounded-lg shadow transition-colors ${isFormVisible
+                            ? 'bg-gray-500 hover:bg-gray-600'
+                            : 'bg-green-500 hover:bg-green-600'
+                            }`}
+                    >
+                        {isFormVisible ? '登録フォームを閉じる' : '新しい単語を登録する'}
+                    </button>
+                </div>
+
+                <div className={`grid transition-all duration-500 ease-in-out ${isFormVisible ? 'grid-rows-[1fr] mt-4' : 'grid-rows-[0fr]'
+                    }`}>
+                    <div className="overflow-hidden">
+                        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border">
+                            <table>
+                                <tbody>
+                                    <NewWordForm
+                                        onWordCreate={handleCreateWord}
+                                        isCreating={isCreating}
+                                        setIsCreating={setIsCreating}
+                                    />
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-            {/* ▲▲▲ 変更点3 ▲▲▲ */}
 
-            {/* ▼▼▼ 変更点4: ローディング中やデータなしのメッセージ表示位置 ▼▼▼ */}
-            {isLoading && (
-                <div className="text-center py-4 text-gray-500">データを読み込み中...</div>
-            )}
-            {/* エラーはモーダルで表示されるので、ここではisLoadingとwords.lengthのみで判断 */}
-            {!isLoading && words.length === 0 && !isErrorModalOpen && ( // ★モーダルが開いていない時のみ表示
-                <p className="text-center py-10">登録されている単語はありません。新規登録フォームから追加してください。</p>
-            )}
-            {/* ▲▲▲ 変更点4 ▲▲▲ */}
+            {/* --- 2. 一覧表示エリア --- */}
+            <div>
+                <div className="mb-4 flex justify-between items-center">
+                    <h2 className="text-xl font-semibold">登録済み単語一覧</h2>
+                    <button
+                        onClick={fetchWords}
+                        disabled={isLoading}
+                        className={`px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        {isLoading ? '更新中...' : '再読み込み'}
+                    </button>
+                </div>
+
+                <div className="mb-4">
+                    <div className="relative w-full md:w-1/2 lg:w-1/3">
+                        <input
+                            type="text"
+                            placeholder="単語や意味で検索..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <div className="absolute top-0 left-0 inline-flex items-center justify-center h-full w-10 text-gray-400">
+                            <svg className="h-5 w-5" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto shadow-md rounded-lg">
+                    <table className="min-w-full bg-white">
+                        <thead className="bg-gray-100">
+                            <tr className="hidden md:table-row">
+                                <th
+                                    className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5 cursor-pointer hover:bg-gray-200"
+                                    onClick={() => requestSort('term')}
+                                >
+                                    単語 {sortConfig?.key === 'term' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                                </th>
+                                <th
+                                    className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5 cursor-pointer hover:bg-gray-200"
+                                    onClick={() => requestSort('definition')}
+                                >
+                                    意味 {sortConfig?.key === 'definition' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+                                </th>
+                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    操作
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 md:divide-y-0">
+                            {!isLoading && filteredAndSortedWords.map((word) => (
+                                <WordListItem
+                                    key={word.word_id}
+                                    word={word}
+                                    onWordUpdate={handleWordUpdate}
+                                    onWordDelete={handleWordDelete}
+                                    openErrorModal={openErrorModal}
+                                />
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {isLoading && (
+                    <div className="text-center py-4 text-gray-500">データを読み込み中...</div>
+                )}
+                {!isLoading && filteredAndSortedWords.length === 0 && !isErrorModalOpen && (
+                    <p className="text-center py-10">該当する単語はありません。</p>
+                )}
+            </div>
         </div>
     );
 };

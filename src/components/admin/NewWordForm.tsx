@@ -6,10 +6,9 @@ interface NewWordFormProps {
     onWordCreate: (term: string, definition: string) => Promise<void>;
     isCreating: boolean;
     setIsCreating: (isCreating: boolean) => void;
-    onClose: () => void;
 }
 
-const NewWordForm: React.FC<NewWordFormProps> = ({ onWordCreate, isCreating, setIsCreating, onClose }) => {
+const NewWordForm: React.FC<NewWordFormProps> = ({ onWordCreate, isCreating, setIsCreating }) => {
     const [newterm, setNewterm] = useState('');
     const [newdefinition, setNewdefinition] = useState('');
 
@@ -81,15 +80,6 @@ const NewWordForm: React.FC<NewWordFormProps> = ({ onWordCreate, isCreating, set
                         disabled={isCreating || !newterm.trim() || !newdefinition.trim()}
                     >
                         {isCreating ? '登録中...' : '登録'}
-                    </button>
-                    {/* ★ 閉じるボタンを追加 */}
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="w-full md:w-auto px-6 py-2 text-sm bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
-                        disabled={isCreating}
-                    >
-                        閉じる
                     </button>
                 </div>
             </td>
