@@ -1,130 +1,125 @@
 // src/components/Header.tsx
+
 import { FC, useState, useRef, useEffect } from 'react';
-import { Link, NavLink } from 'react-router-dom'; // NavLinkを追加
+import { Link, NavLink } from 'react-router-dom';
 import userIcon from '../assets/images/kkrn_icon_user_1.svg';
 
+// 認証状態を管理するカスタムフック（これは仮の実装です）
+// 実際には、Auth0, Firebase, Context APIなどを使って実装します。
+const useAuth = () => {
+    // ここではログイン状態を切り替えるためのダミーのStateを使います
+    const [user, setUser] = useState<{ name: string; avatarUrl: string } | null>(null);
+
+    const login = () => setUser({ name: '田中 太郎', avatarUrl: userIcon });
+    const logout = () => setUser(null);
+
+    return { user, login, logout };
+};
+
+
 const Header: FC = () => {
-    // ユーザーメニュー用のState
+    const { user, login, logout } = useAuth(); // ログイン状態を取得
+
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    // ★ ハンバーガーメニュー用のStateを追加
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const userMenuRef = useRef<HTMLDivElement>(null);
-    const mobileMenuRef = useRef<HTMLDivElement>(null); // ★ モバイルメニュー用のref
 
-    const toggleUserMenu = () => {
-        setIsUserMenuOpen(!isUserMenuOpen);
+    // --- メニュー開閉ロジック ---
+    const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+    const closeAllMenus = () => {
+        setIsUserMenuOpen(false);
+        setIsMobileMenuOpen(false);
     };
 
-    // ★ ハンバーガーメニューの切り替え
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen);
-    };
-
-    // ドロップダウンメニューの外側をクリックしたときに閉じるロジック
+    // 外側クリックでメニューを閉じる
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
                 setIsUserMenuOpen(false);
             }
-            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-                // ハンバーガーボタン自体は除外する
-                const hamburgerButton = document.getElementById('hamburger-button');
-                if (hamburgerButton && hamburgerButton.contains(event.target as Node)) {
-                    return;
-                }
-                setIsMobileMenuOpen(false);
-            }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []); // 依存配列を空にして初回のみ実行
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
-    // NavLink用のスタイル関数
-    const navLinkStyle = ({ isActive }: { isActive: boolean }) =>
-        `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+    // --- スタイル定義 ---
+    const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+        `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'
         }`;
+
+    const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+        `block ${navLinkClass({ isActive })}`;
 
 
     return (
-        <header className="bg-white p-4 shadow-md sticky top-0 z-30">
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 sticky top-0 z-40">
             <div className="container mx-auto flex items-center justify-between">
                 {/* ロゴ */}
-                <h1 className="text-xl font-bold text-gray-800">
-                    <Link to="/">VocabKeep</Link>
-                </h1>
+                <Link to="/" className="text-xl font-bold text-gray-800" onClick={closeAllMenus}>
+                    VocabKeep
+                </Link>
+
+                {/* PC用ナビゲーション */}
+                <nav className="hidden md:flex items-center gap-2">
+                    <NavLink to="/vocablary-app" className={navLinkClass}>フラッシュカード</NavLink>
+                    <NavLink to="/about" className={navLinkClass}>About</NavLink>
+                </nav>
 
                 {/* 右側のメニュー群 */}
-                <div className="flex items-center">
+                <div className="flex items-center gap-4">
+                    {/* ★ ログイン状態に応じて表示を切り替え */}
+                    {user ? (
+                        // --- ログイン後の表示 ---
+                        <div className="relative" ref={userMenuRef}>
+                            <button
+                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                className="flex items-center gap-2 focus:outline-none"
+                            >
+                                <img src={user.avatarUrl} alt="ユーザーアバター" className="w-9 h-9 rounded-full object-cover border-2 border-gray-300" />
+                                <span className="hidden sm:inline text-sm font-medium text-gray-700">{user.name}</span>
+                            </button>
 
-                    {/* PC用のナビゲーション (md以上で表示) */}
-                    <nav className="hidden md:flex md:gap-2 md:mr-4">
-                        <NavLink to="/" className={navLinkStyle}>Home</NavLink>
-                        <NavLink to="/about" className={navLinkStyle}>About</NavLink>
-                        <NavLink to="/sample" className={navLinkStyle}>Sample</NavLink>
-                        <NavLink to="/testpage" className={navLinkStyle}>Testpage</NavLink>
-                        <NavLink to="/vocablary-app" className={navLinkStyle}>VocablaryApp</NavLink>
-                    </nav>
-
-                    {/* ユーザーメニュー (PC/スマホ共通) */}
-                    <div className="relative" ref={userMenuRef}>
-                        <button
-                            onClick={toggleUserMenu}
-                            className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:bg-gray-300 transition-colors"
-                        >
-                            <img src={userIcon} alt="ユーザーアイコン" className="w-full h-full rounded-full object-cover" />
-                        </button>
-                        {isUserMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
-                                <Link to="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsUserMenuOpen(false)}>
-                                    管理画面
-                                </Link>
-                                {/* 他のメニュー */}
+                            {/* ユーザーメニューのドロップダウン */}
+                            <div className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5 transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+                                <Link to="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={closeAllMenus}>管理画面</Link>
+                                <button onClick={() => { logout(); closeAllMenus(); }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                    ログアウト
+                                </button>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        // --- ログイン前の表示 (PC) ---
+                        <div className="hidden md:flex items-center gap-2">
+                            <button onClick={login} className="text-sm font-medium text-gray-600 hover:text-blue-600">ログイン</button>
+                            <button onClick={login} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">新規登録</button>
+                        </div>
+                    )}
 
-                    {/* ハンバーガーボタン (md未満で表示) */}
-                    <div className="ml-2 md:hidden" ref={mobileMenuRef}>
-                        <button
-                            id="hamburger-button"
-                            onClick={toggleMobileMenu}
-                            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                            aria-controls="mobile-menu"
-                            aria-expanded={isMobileMenuOpen}
-                        >
-                            <span className="sr-only">メインメニューを開く</span>
-                            {isMobileMenuOpen ? (
-                                // 閉じるアイコン (X)
-                                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            ) : (
-                                // ハンバーガーアイコン (三)
-                                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
-                            )}
+                    {/* ハンバーガーボタン (スマホ用) */}
+                    <div className="md:hidden">
+                        <button onClick={toggleMobileMenu} className="p-2 rounded-md text-gray-500 hover:bg-gray-100">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* モバイル用メニュー (スライドイン) */}
-            <div
-                className={`md:hidden absolute top-full left-0 w-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'transform translate-x-0' : 'transform -translate-x-full'
-                    }`}
-                id="mobile-menu"
-            >
-                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                    <NavLink to="/" className={`block ${navLinkStyle({ isActive: location.pathname === '/' })}`} onClick={() => setIsMobileMenuOpen(false)}>Home</NavLink>
-                    <NavLink to="/about" className={`block ${navLinkStyle({ isActive: location.pathname === '/about' })}`} onClick={() => setIsMobileMenuOpen(false)}>About</NavLink>
-                    <NavLink to="/sample" className={`block ${navLinkStyle({ isActive: location.pathname === '/sample' })}`} onClick={() => setIsMobileMenuOpen(false)}>Sample</NavLink>
-                    <NavLink to="/testpage" className={`block ${navLinkStyle({ isActive: location.pathname === '/testpage' })}`} onClick={() => setIsMobileMenuOpen(false)}>Testpage</NavLink>
-                    <NavLink to="/vocablary-app" className={`block ${navLinkStyle({ isActive: location.pathname === '/vocablary-app' })}`} onClick={() => setIsMobileMenuOpen(false)}>VocablaryApp</NavLink>
+            {/* モバイル用ドロップダウンメニュー */}
+            <div className={`md:hidden absolute top-full left-0 w-full bg-white shadow-md transition-all duration-300 ease-in-out overflow-hidden ${isMobileMenuOpen ? 'max-h-96' : 'max-h-0'}`}>
+                <div className="p-4">
+                    <nav className="flex flex-col gap-2">
+                        <NavLink to="/vocablary-app" className={mobileNavLinkClass} onClick={closeAllMenus}>フラッシュカード</NavLink>
+                        <NavLink to="/about" className={mobileNavLinkClass} onClick={closeAllMenus}>About</NavLink>
+                        <hr className="my-2" />
+                        {/* ★ ログイン状態に応じて表示を切り替え (モバイル) */}
+                        {!user && (
+                            <>
+                                <button onClick={() => { login(); closeAllMenus(); }} className="w-full text-left px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md">ログイン</button>
+                                <button onClick={() => { login(); closeAllMenus(); }} className="w-full mt-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">新規登録</button>
+                            </>
+                        )}
+                    </nav>
                 </div>
             </div>
         </header>
