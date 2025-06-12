@@ -10,6 +10,11 @@ import LandingPage from '../pages/LandingPage';
 import VocablaryApp from '../pages/VocablaryApp';
 import AdminPage from '../pages/AdminPage';
 import NotFound from '../pages/NotFound';
+import VerifyEmailPage from '../pages/VerifyEmailPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
+import DashboardPage from '../pages/DashboardPage';
+import AuthCallbackPage from '../pages/AuthCallbackPage';
 // ... 他のページのインポート
 
 // ★ 認証済みユーザーのみアクセス可能なルートをラップするコンポーネント
@@ -39,6 +44,10 @@ const AppRoutes: React.FC = () => {
             {/* --- Public Routes (認証不要) --- */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             {/* パスワードリセットなどもここに追加 */}
 
             {/* 共通のLayoutを使うが、認証は不要なルート群 */}
@@ -51,8 +60,9 @@ const AppRoutes: React.FC = () => {
             {/* --- Protected Routes (認証が必要) --- */}
             {/* 共通のLayoutを使い、かつ認証が必要なルート群 */}
             <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
-                <Route index element={<Navigate to="/vocablary-app" />} /> {/* ルートパスはフラッシュカードにリダイレクト */}
-                <Route path="vocablary-app" element={<VocablaryApp />} />
+                <Route index element={<Navigate to="/app/dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="flashcards" element={<VocablaryApp />} />
                 <Route path="admin" element={<AdminPage />} />
                 {/* 他の保護したいページ (About, Sampleなど) もここに入れる */}
                 <Route path="*" element={<NotFound />} />

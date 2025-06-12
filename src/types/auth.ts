@@ -6,6 +6,16 @@ export interface LoginPayload {
 export interface LoginResponse {
     access_token: string;
 }
+
+export interface ForgotPasswordPayload {
+    email: string;
+}
+
+export interface ResetPasswordPayload {
+    token: string;
+    password: string;
+}
+
 // 新規登録API (`/register`) に送信するデータ(ペイロード)の型
 export interface RegisterPayload {
     name: string;

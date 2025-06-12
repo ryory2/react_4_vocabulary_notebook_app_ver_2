@@ -55,8 +55,8 @@ const Header: FC = () => {
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 sticky top-0 z-40">
             <div className="container mx-auto flex items-center justify-between">
                 {/* ★★★ ロゴのリンク先を動的に変更 ★★★ */}
-                <Link to={isAuthenticated ? "/app/vocablary-app" : "/"} className="text-xl font-bold text-gray-800" onClick={closeAllMenus}>
-                    VocabKeep
+                <Link to={isAuthenticated ? "/app/dashboard" : "/"} className="text-xl font-bold text-gray-800" onClick={closeAllMenus}>
+                    Kioku
                 </Link>
 
                 {/* PC用ナビゲーション */}
@@ -64,7 +64,7 @@ const Header: FC = () => {
                     {/* ★★★ ログイン中のみナビゲーションを表示 ★★★ */}
                     {isAuthenticated && (
                         <>
-                            <NavLink to="/app/vocablary-app" className={navLinkClass}>フラッシュカード</NavLink>
+                            <NavLink to="/app/flashcards" className={navLinkClass}>フラッシュカード</NavLink>
                             <NavLink to="/app/admin" className={navLinkClass}>単語管理</NavLink>
                         </>
                     )}

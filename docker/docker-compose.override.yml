@@ -6,12 +6,14 @@ services:  # サービス定義の開始です。ここではpostgresとpgadmin�
       target: development # ★★★ 開発用ステージを指定 ★★★
       # args:
       #   - NODE_VERSION=18
+        # - VITE_API_DOMAIN=${VITE_API_DOMAIN}
+        # - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+        # - VITE_GOOGLE_OAUTH_REDIRECT_URI=${VITE_GOOGLE_OAUTH_REDIRECT_URI}
     container_name: myapp_dev_app
     env_file:
       - ./env/.env.local
     # ports:
     #   - "3000:3000"
-      # - "8080:80"
     # networks:
     #   - my-network
     # volumes:

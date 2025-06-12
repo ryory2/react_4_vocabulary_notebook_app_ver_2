@@ -28,6 +28,12 @@ jobs:
 
       - name: Build
         run: npm run build # Reactのビルド
+        env:
+          # GitHubのVariablesから本番用の値を取得
+          VITE_API_DOMAIN: ${{ vars.PRODUCTION_API_DOMAIN }}
+          VITE_GOOGLE_OAUTH_REDIRECT_URI: ${{ vars.PRODUCTION_GOOGLE_OAUTH_REDIRECT_URI }}
+          # GitHubのSecretsから本番用の機密情報を取得
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.PRODUCTION_GOOGLE_CLIENT_ID }}
 
       - name: Configure AWS credentials
         # 公式のAWS Actions（OIDC連携 or シークレット）を設定

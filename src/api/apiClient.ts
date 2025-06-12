@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { ApiErrorResponse } from '../types/api'; // ★ご提示の型をインポート
+import { config } from '../config';
 
 // グローバルなログアウト関数を保持
 let globalLogout: (() => void) | null = null;
@@ -7,11 +8,8 @@ export const setGlobalLogout = (logoutFunc: () => void) => {
     globalLogout = logoutFunc;
 };
 
-const apiDomain = import.meta.env.VITE_APP_API_DOMAIN || 'http://localhost:8080';
-
-
 const apiClient = axios.create({
-    baseURL: `${apiDomain}/api/v1`,
+    baseURL: config.api.baseUrl, // ★ configからbaseURLを取得
 });
 
 // リクエストインターセプター (JWT付与)
@@ -44,8 +42,10 @@ apiClient.interceptors.response.use(
 
 // 汎用的なエラーメッセージ抽出ヘルパー
 export const getApiErrorMessage = (error: unknown): string => {
-    if (axios.isAxiosError<ApiErrorResponse>(error) && error.response?.data?.error?.message) {
-        return error.response.data.error.message;
+    if (axios.isAxiosError<ApiErrorResponse>(error)) {
+        if (error.response && error.response.data && error.response.data.error) {
+            return error.response.data.error.message;
+        }
     }
     if (error instanceof Error) {
         return error.message;
