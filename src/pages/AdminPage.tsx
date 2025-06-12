@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Word } from '../types/word';
-import { getWords, createWord } from '../services/wordApi';
+import { getWords, createWord } from '../api/endpoints';
 import WordListItem from '../components/admin/WordListItem';
 import NewWordForm from '../components/admin/NewWordForm';
 import ErrorModal from '../components/common/ErrorModal';
 import SuccessToast from '../components/common/SuccessToast';
+import { getApiErrorMessage } from '../api/apiClient';
 
 const AdminPage: React.FC = () => {
     // --- State管理 ---
@@ -55,10 +56,11 @@ const AdminPage: React.FC = () => {
             setWords(data);
             if (isErrorModalOpen) closeErrorModal();
         } catch (err) {
-            console.error('Failed to fetch words:', err);
-            let errorMessage = '単語の読み込みに失敗しました。';
+            let errorMessage = '新しい単語の登録に失敗しました。';
             if (err instanceof Error) errorMessage = err.message;
-            openErrorModal('読込エラー', errorMessage);
+            openErrorModal('登録エラー', errorMessage);
+            if (err instanceof Error) throw err;
+            else throw new Error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -86,11 +88,12 @@ const AdminPage: React.FC = () => {
             setSuccessMessage(`「${term}」を登録しました。`);
         } catch (err) {
             console.error('Failed to create word:', err);
-            let errorMessage = '新しい単語の登録に失敗しました。';
-            if (err instanceof Error) errorMessage = err.message;
+            // ★ getApiErrorMessage を使用
+            const errorMessage = getApiErrorMessage(err);
             openErrorModal('登録エラー', errorMessage);
-            if (err instanceof Error) throw err;
-            else throw new Error(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setIsCreating(false);
         }
     };
 

@@ -1,7 +1,9 @@
 import React, { useEffect, useReducer, useCallback } from 'react';
 import { Word } from '../types/word';
+import { getReviewableWords, submitReviewResult } from '../api/endpoints';
+import { getApiErrorMessage } from '../api/apiClient';
 import { WordLevels } from '../constants';
-import { fetchReviewableWordsApi, updateWordLevelApi } from '../services/api';
+
 
 // --- StateとActionの型定義 ---
 interface FlashcardState {
@@ -79,10 +81,11 @@ const FlashcardApp: React.FC = () => {
     const fetchWords = useCallback(async () => {
         dispatch({ type: 'FETCH_START' });
         try {
-            const apiWords = await fetchReviewableWordsApi();
+            const apiWords = await getReviewableWords();
             dispatch({ type: 'FETCH_SUCCESS', payload: apiWords });
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : '不明なエラーが発生しました。';
+            // ★ 共通エラーハンドラを使用
+            const errorMessage = getApiErrorMessage(err);
             dispatch({ type: 'FETCH_ERROR', payload: errorMessage });
         }
     }, []);
@@ -100,6 +103,7 @@ const FlashcardApp: React.FC = () => {
         setTimeout(() => {
             const currentWord = words[currentIndex];
             const originalWords = words;
+            const originalIndex = currentIndex; // 現在のインデックスを保存
 
             const newLevel = isCorrect
                 ? (currentWord.level < WordLevels.MASTERED ? (currentWord.level + 1) as Word['level'] : WordLevels.MASTERED)
@@ -111,12 +115,16 @@ const FlashcardApp: React.FC = () => {
             dispatch({ type: 'END_SWIPE', payload: { newWords } });
 
             // 裏でAPI通信
-            updateWordLevelApi(currentWord.word_id, isCorrect)
+            submitReviewResult(currentWord.word_id, isCorrect)
                 .catch((err) => {
-                    const errorMessage = err instanceof Error ? err.message : 'レベルの更新に失敗しました。';
+                    // 認証エラー(401)はapiClientのインターセプターが自動処理
+                    const errorMessage = getApiErrorMessage(err);
                     dispatch({ type: 'FETCH_ERROR', payload: errorMessage });
                     // エラー時はUIを元の状態に戻す
-                    dispatch({ type: 'REVERT_STATE', payload: { words: originalWords, currentIndex } });
+                    dispatch({
+                        type: 'REVERT_STATE',
+                        payload: { words: originalWords, currentIndex: originalIndex }
+                    });
                 });
         }, 300);
     };
