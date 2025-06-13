@@ -15,6 +15,8 @@ import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import DashboardPage from '../pages/DashboardPage';
 import AuthCallbackPage from '../pages/AuthCallbackPage';
+import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
+import TermsOfServicePage from '../pages/TermsOfServicePage';
 // ... 他のページのインポート
 
 // ★ 認証済みユーザーのみアクセス可能なルートをラップするコンポーネント
@@ -54,7 +56,8 @@ const AppRoutes: React.FC = () => {
             <Route path="/" element={<Layout />}>
                 {/* index はルートパス("/") を意味する */}
                 <Route index element={<LandingPage />} />
-                {/* 他に公開したいページがあればここに追加 (例: /about, /features) */}
+                <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="terms-of-service" element={<TermsOfServicePage />} />
             </Route>
 
             {/* --- Protected Routes (認証が必要) --- */}

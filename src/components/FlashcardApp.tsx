@@ -1,4 +1,5 @@
 import React, { useEffect, useReducer, useCallback } from 'react';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { Word } from '../types/word';
 import { getReviewableWords, submitReviewResult } from '../api/endpoints';
 import { getApiErrorMessage } from '../api/apiClient';
@@ -74,6 +75,7 @@ function flashcardReducer(state: FlashcardState, action: FlashcardAction): Flash
 // アプリ本体のコンポーネント
 // ====================
 const FlashcardApp: React.FC = () => {
+    const pageMeta = usePageMeta('privacyPolicy');
     const [state, dispatch] = useReducer(flashcardReducer, initialState);
     const { words, currentIndex, showAnswer, isLoading, error, cardAnimation } = state;
 
@@ -157,79 +159,82 @@ const FlashcardApp: React.FC = () => {
     const currentWord = words[currentIndex];
 
     return (
-        <div className="flex flex-col items-center justify-center bg-gray-100 p-4 min-h-screen font-sans">
-            <div className="w-full max-w-md">
-                <div className="mb-6 text-center">
-                    <p className="text-lg text-gray-600">
-                        質問 {currentIndex + 1} / {words.length}
-                        <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full">
-                            レベル {currentWord.level}
-                        </span>
-                    </p>
-                </div>
+        <>
+            {pageMeta}
+            <div className="flex flex-col items-center justify-center bg-gray-100 p-4 min-h-screen font-sans">
+                <div className="w-full max-w-md">
+                    <div className="mb-6 text-center">
+                        <p className="text-lg text-gray-600">
+                            質問 {currentIndex + 1} / {words.length}
+                            <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full">
+                                レベル {currentWord.level}
+                            </span>
+                        </p>
+                    </div>
 
-                {/* カードデッキのUI */}
-                <div className="relative w-full h-40 mb-4 [perspective:1000px]">
-                    {words.slice(currentIndex, currentIndex + 3).reverse().map((word, index) => {
-                        const totalSliced = words.slice(currentIndex, currentIndex + 3).length;
-                        const isTopCard = index === totalSliced - 1;
+                    {/* カードデッキのUI */}
+                    <div className="relative w-full h-40 mb-4 [perspective:1000px]">
+                        {words.slice(currentIndex, currentIndex + 3).reverse().map((word, index) => {
+                            const totalSliced = words.slice(currentIndex, currentIndex + 3).length;
+                            const isTopCard = index === totalSliced - 1;
 
-                        const cardStyle = {
-                            zIndex: index,
-                            transform: `scale(${1 - (totalSliced - 1 - index) * 0.05}) translateY(${(totalSliced - 1 - index) * -10}px)`,
-                        };
+                            const cardStyle = {
+                                zIndex: index,
+                                transform: `scale(${1 - (totalSliced - 1 - index) * 0.05}) translateY(${(totalSliced - 1 - index) * -10}px)`,
+                            };
 
-                        let animationClass = '';
-                        if (isTopCard && cardAnimation !== '') {
-                            animationClass = {
-                                'left': '-translate-x-[120%] rotate-[-15deg]',
-                                'right': 'translate-x-[120%] rotate-[15deg]',
-                            }[cardAnimation];
-                        }
+                            let animationClass = '';
+                            if (isTopCard && cardAnimation !== '') {
+                                animationClass = {
+                                    'left': '-translate-x-[120%] rotate-[-15deg]',
+                                    'right': 'translate-x-[120%] rotate-[15deg]',
+                                }[cardAnimation];
+                            }
 
-                        return (
-                            <div
-                                key={word.word_id}
-                                className={`absolute w-full h-full transition-all duration-300 ease-in-out ${animationClass}`}
-                                style={cardStyle}
-                            >
-                                {/* カード本体 */}
+                            return (
                                 <div
-                                    className={`relative w-full h-full text-center transition-transform duration-700 [transform-style:preserve-3d] ${isTopCard && showAnswer ? '[transform:rotateY(180deg)]' : ''}`}
-                                    onClick={isTopCard ? () => dispatch({ type: 'FLIP_CARD' }) : undefined}
-                                    style={{ cursor: isTopCard ? 'pointer' : 'default' }}
+                                    key={word.word_id}
+                                    className={`absolute w-full h-full transition-all duration-300 ease-in-out ${animationClass}`}
+                                    style={cardStyle}
                                 >
-                                    <div className="absolute w-full h-full bg-white border rounded-lg shadow-lg flex items-center justify-center p-4 [backface-visibility:hidden]">
-                                        <span className="text-2xl font-semibold">{word.term}</span>
-                                    </div>
-                                    <div className="absolute w-full h-full bg-blue-100 border border-blue-300 rounded-lg shadow-lg flex items-center justify-center p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                                        <span className="text-2xl font-bold text-blue-800">{word.definition}</span>
+                                    {/* カード本体 */}
+                                    <div
+                                        className={`relative w-full h-full text-center transition-transform duration-700 [transform-style:preserve-3d] ${isTopCard && showAnswer ? '[transform:rotateY(180deg)]' : ''}`}
+                                        onClick={isTopCard ? () => dispatch({ type: 'FLIP_CARD' }) : undefined}
+                                        style={{ cursor: isTopCard ? 'pointer' : 'default' }}
+                                    >
+                                        <div className="absolute w-full h-full bg-white border rounded-lg shadow-lg flex items-center justify-center p-4 [backface-visibility:hidden]">
+                                            <span className="text-2xl font-semibold">{word.term}</span>
+                                        </div>
+                                        <div className="absolute w-full h-full bg-blue-100 border border-blue-300 rounded-lg shadow-lg flex items-center justify-center p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                                            <span className="text-2xl font-bold text-blue-800">{word.definition}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
 
-                {/* ボタンエリア */}
-                <div className="flex space-x-4 w-full max-w-md">
-                    <button
-                        className={`w-1/2 py-3 rounded-lg text-white font-bold transition-all duration-200 ${showAnswer && !cardAnimation ? 'bg-red-500 hover:bg-red-600 shadow-lg' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                        onClick={() => handleAnswer(false)}
-                        disabled={!showAnswer || cardAnimation !== ''}
-                    >
-                        不正解
-                    </button>
-                    <button
-                        className={`w-1/2 py-3 rounded-lg text-white font-bold transition-all duration-200 ${showAnswer && !cardAnimation ? 'bg-green-500 hover:bg-green-600 shadow-lg' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                        onClick={() => handleAnswer(true)}
-                        disabled={!showAnswer || cardAnimation !== ''}
-                    >
-                        正解
-                    </button>
+                    {/* ボタンエリア */}
+                    <div className="flex space-x-4 w-full max-w-md">
+                        <button
+                            className={`w-1/2 py-3 rounded-lg text-white font-bold transition-all duration-200 ${showAnswer && !cardAnimation ? 'bg-red-500 hover:bg-red-600 shadow-lg' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                            onClick={() => handleAnswer(false)}
+                            disabled={!showAnswer || cardAnimation !== ''}
+                        >
+                            不正解
+                        </button>
+                        <button
+                            className={`w-1/2 py-3 rounded-lg text-white font-bold transition-all duration-200 ${showAnswer && !cardAnimation ? 'bg-green-500 hover:bg-green-600 shadow-lg' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                            onClick={() => handleAnswer(true)}
+                            disabled={!showAnswer || cardAnimation !== ''}
+                        >
+                            正解
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

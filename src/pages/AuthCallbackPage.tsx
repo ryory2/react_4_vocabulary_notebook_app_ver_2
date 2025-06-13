@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { loginWithGoogleCode } from '../api/endpoints';
 import { getApiErrorMessage } from '../api/apiClient';
 
 const AuthCallbackPage: React.FC = () => {
+    const pageMeta = usePageMeta('register');
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { login } = useAuth();
@@ -61,9 +63,12 @@ const AuthCallbackPage: React.FC = () => {
 
     // 処理中はローディング表示
     return (
-        <div className="flex items-center justify-center min-h-screen">
-            <p className="text-lg animate-pulse">認証処理中...</p>
-        </div>
+        <>
+            {pageMeta}
+            <div className="flex items-center justify-center min-h-screen">
+                <p className="text-lg animate-pulse">認証処理中...</p>
+            </div>
+        </>
     );
 };
 
