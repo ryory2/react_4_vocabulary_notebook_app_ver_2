@@ -12,7 +12,7 @@ const SEPARATOR = '-';
 export const PAGE_META: Record<string, PageMetaInfo> = {
     // --- Public Pages ---
     landing: {
-        title: 'kioku - 単語学習プラットフォーム',
+        title: 'Kioku - 単語学習プラットフォーム',
         description: 'Kiokuは、忘却曲線に基づいた最適なタイミングで復習を促す、新しい単語学習プラットフォームです。',
     },
     login: {

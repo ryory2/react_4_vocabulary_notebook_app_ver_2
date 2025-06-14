@@ -49,7 +49,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/auth/google/callback" element={<AuthCallbackPage />} />
             {/* パスワードリセットなどもここに追加 */}
 
             {/* 共通のLayoutを使うが、認証は不要なルート群 */}
