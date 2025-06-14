@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -11,8 +11,13 @@ const AuthCallbackPage: React.FC = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
     const [error, setError] = useState<string | null>(null);
+    const hasProcessed = useRef(false);
 
     useEffect(() => {
+        // 既に処理が実行済みであれば、何もせずに終了
+        if (hasProcessed.current) {
+            return;
+        }
         // URLから 'code' クエリパラメータを取得
         const code = searchParams.get('code');
         const errorParam = searchParams.get('error');
@@ -23,6 +28,7 @@ const AuthCallbackPage: React.FC = () => {
         }
 
         if (code) {
+            hasProcessed.current = true;
             const exchangeCodeForToken = async () => {
                 try {
                     // 認証コードをバックエンドにPOSTして、アプリ独自のJWTを取得
