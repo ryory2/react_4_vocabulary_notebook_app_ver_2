@@ -5,6 +5,16 @@ FROM node:${NODE_VERSION}-alpine as builder
 # Debianベースのイメージに変更 (bullseye は Debian 11)
 # FROM mcr.microsoft.com/devcontainers/typescript-node:${NODE_VERSION}-bullseye as builder
 
+# ビルド時に外部から受け取る引数を宣言
+ARG VITE_API_DOMAIN
+ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_GOOGLE_OAUTH_REDIRECT_URI
+
+# これらの引数を環境変数として設定
+ENV VITE_API_DOMAIN=${VITE_API_DOMAIN}
+ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+ENV VITE_GOOGLE_OAUTH_REDIRECT_URI=${VITE_GOOGLE_OAUTH_REDIRECT_URI}
+
 # curl をインストール
 RUN apk update && apk add --no-cache curl
 
@@ -13,6 +23,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # 依存関係のインストール
+RUN npm config set registry https://registry.npmmirror.com
 RUN npm install
 
 COPY . .

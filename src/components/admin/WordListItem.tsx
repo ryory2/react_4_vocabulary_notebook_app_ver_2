@@ -1,7 +1,9 @@
 import React, { useState, ChangeEvent } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Word } from '../../types/word';
-import { updateWord, softDeleteWord } from '../../services/wordApi';
+import { UpdateWordPayload } from '../../types/wordApiPayloads';
+import { updateWord, deleteWord } from '../../api/endpoints';
+import { getApiErrorMessage } from '../../api/apiClient';
 import ConfirmationModal from '../common/ConfirmationModal';
 
 interface WordListItemProps {
@@ -13,86 +15,100 @@ interface WordListItemProps {
 
 const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordDelete, openErrorModal }) => {
     // --- State管理 ---
-    const [editingterm, setEditingterm] = useState(word.term);
-    const [editingdefinition, setEditingdefinition] = useState(word.definition);
+    const [editingTerm, setEditingTerm] = useState(word.term);
+    const [editingDefinition, setEditingDefinition] = useState(word.definition);
 
     const [isUpdating, setIsUpdating] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false); // 削除確認モーダルかどうかを判定するためのフラグ
 
-    const [isUpdateConfirmOpen, setIsUpdateConfirmOpen] = useState(false);
-    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-
-    const [updatePayload, setUpdatePayload] = useState<{ field: 'term' | 'definition'; value: string } | null>(null);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false); // 更新・削除兼用の確認モーダル
 
     const [isTermExpanded, setIsTermExpanded] = useState(false);
     const [isDefinitionExpanded, setIsDefinitionExpanded] = useState(false);
 
-    const hasChanges = word.term !== editingterm || word.definition !== editingdefinition;
+    const hasChanges = word.term !== editingTerm || word.definition !== editingDefinition;
 
     // --- ハンドラ関数 ---
 
     const handleUpdateClick = () => {
         if (!hasChanges) return;
+        setIsDeleting(false); // 更新モードに設定
+        setIsConfirmOpen(true);
+    };
 
-        let payload: { field: 'term' | 'definition'; value: string } | null = null;
-        if (word.term !== editingterm) {
-            payload = { field: 'term', value: editingterm };
-        } else if (word.definition !== editingdefinition) {
-            payload = { field: 'definition', value: editingdefinition };
-        }
-
-        if (payload) {
-            setUpdatePayload(payload);
-            setIsUpdateConfirmOpen(true);
-        }
+    const handleDeleteClick = () => {
+        setIsDeleting(true); // 削除モードに設定
+        setIsConfirmOpen(true);
     };
 
     const handleConfirmUpdate = async () => {
-        if (!updatePayload) return;
+        if (!hasChanges) return;
 
         setIsUpdating(true);
-        try {
-            const updatedWord = await updateWord(word.word_id, { [updatePayload.field]: updatePayload.value });
-            onWordUpdate(updatedWord, `「${updatedWord.term}」を更新しました。`);
-            setIsUpdateConfirmOpen(false);
-            setUpdatePayload(null);
-        } catch (error) {
-            setIsUpdateConfirmOpen(false);
-            console.error(`Failed to update ${updatePayload.field}:`, error);
-            if (updatePayload.field === 'term') setEditingterm(word.term);
-            if (updatePayload.field === 'definition') setEditingdefinition(word.definition);
+        const payload: UpdateWordPayload = {};
+        if (word.term !== editingTerm) {
+            payload.term = editingTerm;
+        }
+        if (word.definition !== editingDefinition) {
+            payload.definition = editingDefinition;
+        }
 
-            let errorMessage = `更新に失敗しました。`;
-            if (error instanceof Error) errorMessage = error.message;
-            openErrorModal(`更新エラー`, errorMessage);
+        try {
+            const updatedWord = await updateWord(word.word_id, payload);
+            onWordUpdate(updatedWord, `「${updatedWord.term}」を更新しました。`);
+        } catch (error) {
+            setEditingTerm(word.term);
+            setEditingDefinition(word.definition);
+            const errorMessage = getApiErrorMessage(error);
+            openErrorModal('更新エラー', errorMessage);
         } finally {
+            setIsConfirmOpen(false);
             setIsUpdating(false);
         }
     };
 
-    const handleDeleteClick = () => {
-        setIsDeleteConfirmOpen(true);
-    };
-
     const handleConfirmDelete = async () => {
+        setIsUpdating(true); // 削除中もボタンを無効化するため isUpdating を流用しても良いが、isDeleting を使うのが明確
         setIsDeleting(true);
         try {
-            await softDeleteWord(word.word_id);
+            await deleteWord(word.word_id);
             onWordDelete(word.word_id, `「${word.term}」を削除しました。`);
-            setIsDeleteConfirmOpen(false);
         } catch (error) {
-            setIsDeleteConfirmOpen(false);
-            console.error('Failed to delete word:', error);
-            let errorMessage = '単語の削除に失敗しました。';
-            if (error instanceof Error) errorMessage = error.message;
+            const errorMessage = getApiErrorMessage(error);
             openErrorModal('削除エラー', errorMessage);
         } finally {
+            setIsConfirmOpen(false);
             setIsDeleting(false);
+            // setIsUpdating(false); // isUpdating を使った場合
         }
     };
 
+    const handleModalClose = () => {
+        setIsConfirmOpen(false);
+        // モーダルを閉じる際に、削除モードも解除する
+        if (isDeleting) {
+            setIsDeleting(false);
+        }
+    }
+
     return (
         <>
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={handleModalClose}
+                onConfirm={isDeleting ? handleConfirmDelete : handleConfirmUpdate}
+                title={isDeleting ? "削除の確認" : "更新の確認"}
+                message={
+                    isDeleting ? (
+                        <p>本当に「<span className="font-bold">{word.term}</span>」を削除しますか？</p>
+                    ) : (
+                        <p>内容を更新してもよろしいですか？</p>
+                    )
+                }
+                confirmButtonText={isDeleting ? "削除する" : "更新する"}
+                isConfirming={isUpdating || isDeleting}
+            />
+
             <tr className={`
                 border-b md:border-b-0
                 ${word.deletedAt ? 'bg-gray-200 text-gray-500' : ''}
@@ -104,19 +120,19 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                     <span className="font-bold text-sm text-gray-600 md:hidden">単語</span>
                     <div>
                         <TextareaAutosize
-                            value={editingterm}
-                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingterm(e.target.value)}
+                            value={editingTerm}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingTerm(e.target.value)}
                             className={`w-full mt-1 p-2 border rounded resize-none focus:ring-blue-500 focus:border-blue-500`}
                             disabled={!!word.deletedAt || isUpdating || isDeleting}
                             minRows={1}
                             maxRows={isTermExpanded ? 10 : 1}
                         />
-                        {editingterm.includes('\n') && (
+                        {editingTerm.length > 50 && ( // 例えば50文字以上で表示など
                             <button
                                 onClick={() => setIsTermExpanded(!isTermExpanded)}
                                 className="text-xs px-2 py-1 mt-1 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                             >
-                                {isTermExpanded ? '閉じる' : 'すべて表示'}
+                                {isTermExpanded ? '折りたたむ' : 'すべて表示'}
                             </button>
                         )}
                     </div>
@@ -125,19 +141,19 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                     <span className="font-bold text-sm text-gray-600 md:hidden">意味</span>
                     <div>
                         <TextareaAutosize
-                            value={editingdefinition}
-                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingdefinition(e.target.value)}
+                            value={editingDefinition}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditingDefinition(e.target.value)}
                             className={`w-full mt-1 p-2 border rounded resize-none focus:ring-blue-500 focus:border-blue-500`}
                             disabled={!!word.deletedAt || isUpdating || isDeleting}
                             minRows={1}
                             maxRows={isDefinitionExpanded ? 10 : 1}
                         />
-                        {editingdefinition.includes('\n') && (
+                        {editingDefinition.length > 50 && ( // 例えば50文字以上で表示など
                             <button
                                 onClick={() => setIsDefinitionExpanded(!isDefinitionExpanded)}
                                 className="text-xs px-2 py-1 mt-1 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                             >
-                                {isDefinitionExpanded ? '閉じる' : 'すべて表示'}
+                                {isDefinitionExpanded ? '折りたたむ' : 'すべて表示'}
                             </button>
                         )}
                     </div>
@@ -167,26 +183,6 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                     </div>
                 </td>
             </tr>
-
-            <ConfirmationModal
-                isOpen={isUpdateConfirmOpen}
-                onClose={() => setIsUpdateConfirmOpen(false)}
-                onConfirm={handleConfirmUpdate}
-                title="更新の確認"
-                message={<p>内容を更新してもよろしいですか？</p>}
-                confirmButtonText="更新する"
-                isConfirming={isUpdating}
-            />
-
-            <ConfirmationModal
-                isOpen={isDeleteConfirmOpen}
-                onClose={() => setIsDeleteConfirmOpen(false)}
-                onConfirm={handleConfirmDelete}
-                title="削除の確認"
-                message={<p>本当に「<span className="font-bold">{word.term}</span>」を削除しますか？</p>}
-                confirmButtonText="削除する"
-                isConfirming={isDeleting}
-            />
         </>
     );
 };
