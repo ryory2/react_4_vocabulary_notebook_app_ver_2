@@ -1,3 +1,5 @@
+// src/components/admin/WordListItem.tsx
+
 import React, { useState, ChangeEvent } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Word } from '../../types/word';
@@ -18,33 +20,42 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
     const [editingTerm, setEditingTerm] = useState(word.term);
     const [editingDefinition, setEditingDefinition] = useState(word.definition);
 
+    // 更新処理中かどうかのフラグ
     const [isUpdating, setIsUpdating] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false); // 削除確認モーダルかどうかを判定するためのフラグ
+    // 削除処理中かどうかのフラグ
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const [isConfirmOpen, setIsConfirmOpen] = useState(false); // 更新・削除兼用の確認モーダル
+    // 確認モーダルの表示状態
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    // モーダルが「削除用」か「更新用」かを判定するフラグ
+    const [isDeleteMode, setIsDeleteMode] = useState(false);
 
     const [isTermExpanded, setIsTermExpanded] = useState(false);
     const [isDefinitionExpanded, setIsDefinitionExpanded] = useState(false);
 
+    // 変更があったかどうか
     const hasChanges = word.term !== editingTerm || word.definition !== editingDefinition;
 
     // --- ハンドラ関数 ---
 
+    // 「更新」ボタンが押されたとき
     const handleUpdateClick = () => {
         if (!hasChanges) return;
-        setIsDeleting(false); // 更新モードに設定
+        setIsDeleteMode(false); // 更新モードに設定
         setIsConfirmOpen(true);
     };
 
+    // 「削除」ボタンが押されたとき
     const handleDeleteClick = () => {
-        setIsDeleting(true); // 削除モードに設定
+        setIsDeleteMode(true); // 削除モードに設定
         setIsConfirmOpen(true);
     };
 
+    // モーダルで「更新する」が押されたとき
     const handleConfirmUpdate = async () => {
         if (!hasChanges) return;
 
-        setIsUpdating(true);
+        setIsUpdating(true); // 更新処理中フラグを立てる
         const payload: UpdateWordPayload = {};
         if (word.term !== editingTerm) {
             payload.term = editingTerm;
@@ -57,19 +68,20 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
             const updatedWord = await updateWord(word.word_id, payload);
             onWordUpdate(updatedWord, `「${updatedWord.term}」を更新しました。`);
         } catch (error) {
-            setEditingTerm(word.term);
+            setEditingTerm(word.term); // エラー時は元の値に戻す
             setEditingDefinition(word.definition);
             const errorMessage = getApiErrorMessage(error);
             openErrorModal('更新エラー', errorMessage);
         } finally {
+            // 処理が成功しても失敗しても、必ず実行
             setIsConfirmOpen(false);
-            setIsUpdating(false);
+            setIsUpdating(false); // 更新処理中フラグを解除
         }
     };
 
+    // モーダルで「削除する」が押されたとき
     const handleConfirmDelete = async () => {
-        setIsUpdating(true); // 削除中もボタンを無効化するため isUpdating を流用しても良いが、isDeleting を使うのが明確
-        setIsDeleting(true);
+        setIsDeleting(true); // 削除処理中フラグを立てる
         try {
             await deleteWord(word.word_id);
             onWordDelete(word.word_id, `「${word.term}」を削除しました。`);
@@ -77,18 +89,15 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
             const errorMessage = getApiErrorMessage(error);
             openErrorModal('削除エラー', errorMessage);
         } finally {
+            // 処理が成功しても失敗しても、必ず実行
             setIsConfirmOpen(false);
-            setIsDeleting(false);
-            // setIsUpdating(false); // isUpdating を使った場合
+            setIsDeleting(false); // 削除処理中フラグを解除
         }
     };
 
+    // モーダルが閉じられたとき
     const handleModalClose = () => {
         setIsConfirmOpen(false);
-        // モーダルを閉じる際に、削除モードも解除する
-        if (isDeleting) {
-            setIsDeleting(false);
-        }
     }
 
     return (
@@ -96,16 +105,16 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={handleModalClose}
-                onConfirm={isDeleting ? handleConfirmDelete : handleConfirmUpdate}
-                title={isDeleting ? "削除の確認" : "更新の確認"}
+                onConfirm={isDeleteMode ? handleConfirmDelete : handleConfirmUpdate}
+                title={isDeleteMode ? "削除の確認" : "更新の確認"}
                 message={
-                    isDeleting ? (
+                    isDeleteMode ? (
                         <p>本当に「<span className="font-bold">{word.term}</span>」を削除しますか？</p>
                     ) : (
                         <p>内容を更新してもよろしいですか？</p>
                     )
                 }
-                confirmButtonText={isDeleting ? "削除する" : "更新する"}
+                confirmButtonText={isDeleteMode ? "削除する" : "更新する"}
                 isConfirming={isUpdating || isDeleting}
             />
 
@@ -127,7 +136,7 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                             minRows={1}
                             maxRows={isTermExpanded ? 10 : 1}
                         />
-                        {editingTerm.length > 50 && ( // 例えば50文字以上で表示など
+                        {editingTerm.length > 50 && (
                             <button
                                 onClick={() => setIsTermExpanded(!isTermExpanded)}
                                 className="text-xs px-2 py-1 mt-1 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -148,7 +157,7 @@ const WordListItem: React.FC<WordListItemProps> = ({ word, onWordUpdate, onWordD
                             minRows={1}
                             maxRows={isDefinitionExpanded ? 10 : 1}
                         />
-                        {editingDefinition.length > 50 && ( // 例えば50文字以上で表示など
+                        {editingDefinition.length > 50 && (
                             <button
                                 onClick={() => setIsDefinitionExpanded(!isDefinitionExpanded)}
                                 className="text-xs px-2 py-1 mt-1 rounded-md transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
