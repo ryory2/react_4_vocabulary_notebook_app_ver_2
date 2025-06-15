@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { Link, useNavigate } from 'react-router-dom';
 import { getApiErrorMessage } from '../api/apiClient';
-import { createAccount } from '../api/endpoints'; // register用のAPI関数
+import { createAccount } from '../api/endpoints';
 
 const RegisterPage: React.FC = () => {
     const pageMeta = usePageMeta('register');
@@ -22,29 +22,42 @@ const RegisterPage: React.FC = () => {
         e.preventDefault();
         setError(null);
 
-        // フロントエンドでの簡単なバリデーション
-        if (password !== confirmPassword) {
-            setError('パスワードが一致しません。');
+        if (!name.trim()) {
+            setError('ユーザー名を入力してください。');
+            return;
+        }
+        if (!email.trim()) {
+            setError('メールアドレスを入力してください。');
+            return;
+        }
+        // 簡単なメール形式チェック
+        if (!/\S+@\S+\.\S+/.test(email)) {
+            setError('有効なメールアドレスの形式で入力してください。');
+            return;
+        }
+        if (!password) {
+            setError('パスワードを入力してください。');
             return;
         }
         if (password.length < 8) {
             setError('パスワードは8文字以上で入力してください。');
             return;
         }
+        if (password !== confirmPassword) {
+            setError('パスワードが一致しません。');
+            return;
+        }
 
         setIsSubmitting(true);
         try {
-            // ★ 新しいAPI関数を呼び出し
             await createAccount({ name, email, password });
 
-            // 登録成功後、ログインページにメッセージ付きでリダイレクト
             navigate('/login', {
                 state: { message: '登録を受け付けました。アカウントを有効化するため、メールを確認してください。' },
-                replace: true // ブラウザの履歴に登録ページを残さない
+                replace: true
             });
 
         } catch (err) {
-            // ★ 共通エラーハンドラでエラーメッセージを取得
             const errorMessage = getApiErrorMessage(err);
             setError(errorMessage);
         } finally {
@@ -55,7 +68,7 @@ const RegisterPage: React.FC = () => {
     return (
         <>
             {pageMeta}
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
                 <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
                     <div className="text-center">
                         <h1 className="text-3xl font-bold text-gray-800">新規登録</h1>
@@ -67,7 +80,7 @@ const RegisterPage: React.FC = () => {
                         </p>
                     </div>
 
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+                    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
                         {error && (
                             <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
                                 {error}
@@ -83,7 +96,6 @@ const RegisterPage: React.FC = () => {
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                required
                                 className="w-full p-2 mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 autoComplete="username"
                             />
@@ -98,7 +110,6 @@ const RegisterPage: React.FC = () => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                required
                                 className="w-full p-2 mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 autoComplete="email"
                             />
@@ -113,7 +124,6 @@ const RegisterPage: React.FC = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                required
                                 className="w-full p-2 mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 autoComplete="new-password"
                             />
@@ -128,7 +138,6 @@ const RegisterPage: React.FC = () => {
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
                                 className="w-full p-2 mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 autoComplete="new-password"
                             />

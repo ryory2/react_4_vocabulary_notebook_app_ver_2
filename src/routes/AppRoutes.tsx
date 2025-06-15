@@ -17,9 +17,8 @@ import DashboardPage from '../pages/DashboardPage';
 import AuthCallbackPage from '../pages/AuthCallbackPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
-// ... 他のページのインポート
 
-// ★ 認証済みユーザーのみアクセス可能なルートをラップするコンポーネント
+// 認証済みユーザーのみアクセス可能なルートをラップするコンポーネント
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
     const { isAuthenticated, isLoading } = useAuth();
 
@@ -30,8 +29,27 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
     return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
+// ルートパス("/")で認証状態に応じてリダイレクトを行うコンポーネント
+const HomeRedirector = () => {
+    const { isAuthenticated, isLoading } = useAuth();
+
+    // 認証状態が確定するまでローディング画面を表示
+    if (isLoading) {
+        return <div>読み込み中...</div>;
+    }
+
+    if (isAuthenticated) {
+        // ログイン済みの場合、ダッシュボードにリダイレクト
+        return <Navigate to="/app/dashboard" replace />;
+    }
+
+    // ログインしていない場合、トップ画面（LandingPage）を表示
+    return <LandingPage />;
+};
+
+
 const AppRoutes: React.FC = () => {
-    // ★ apiClientのグローバルlogout関数を設定するロジック
+    // apiClientのグローバルlogout関数を設定するロジック
     const { logout } = useAuth();
     const navigate = useNavigate();
     useEffect(() => {
@@ -50,12 +68,10 @@ const AppRoutes: React.FC = () => {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth/google/callback" element={<AuthCallbackPage />} />
-            {/* パスワードリセットなどもここに追加 */}
 
             {/* 共通のLayoutを使うが、認証は不要なルート群 */}
             <Route path="/" element={<Layout />}>
-                {/* index はルートパス("/") を意味する */}
-                <Route index element={<LandingPage />} />
+                <Route index element={<HomeRedirector />} />
                 <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="terms-of-service" element={<TermsOfServicePage />} />
             </Route>
@@ -67,9 +83,10 @@ const AppRoutes: React.FC = () => {
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="flashcards" element={<VocablaryApp />} />
                 <Route path="admin" element={<AdminPage />} />
-                {/* 他の保護したいページ (About, Sampleなど) もここに入れる */}
                 <Route path="*" element={<NotFound />} />
             </Route>
+
+            <Route path="*" element={<NotFound />} />
         </Routes>
     );
 };

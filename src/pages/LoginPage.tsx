@@ -29,7 +29,6 @@ const LoginPage: React.FC = () => {
         if (errorMessageFromUrl) {
             setError(errorMessageFromUrl);
         }
-        // メッセージ表示後にURLをクリーンアップ
         if (location.state || location.search) {
             navigate(location.pathname, { replace: true });
         }
@@ -41,6 +40,21 @@ const LoginPage: React.FC = () => {
         e.preventDefault();
         setError(null);
         setSuccessMessage(null);
+
+        if (!email.trim() && !password.trim()) {
+            setError('メールアドレスとパスワードを入力してください。');
+            return; // 処理を中断
+        }
+        if (!email.trim()) {
+            setError('メールアドレスを入力してください。');
+            return;
+        }
+        if (!password.trim()) {
+            setError('パスワードを入力してください。');
+            return;
+        }
+        // 【修正】ここまでバリデーションチェック
+
         setIsSubmitting(true);
         try {
             const response = await loginUser({ email, password });
@@ -54,7 +68,6 @@ const LoginPage: React.FC = () => {
     };
 
     const handleGoogleLogin = () => {
-        // 環境変数からGoogleのクライアントIDと、フロントエンドのコールバックURLを取得
         const clientId = config.auth.google.clientId;
         const redirectUri = config.auth.google.redirectUri;
 
@@ -64,13 +77,8 @@ const LoginPage: React.FC = () => {
             return;
         }
 
-        // 要求する権限の範囲
         const scope = 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
-
-        // Googleの認証エンドポイントURLを組み立てる
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline`;
-
-        // ユーザーをGoogleの認証ページにリダイレクトさせる
         window.location.href = authUrl;
     };
 
@@ -89,7 +97,7 @@ const LoginPage: React.FC = () => {
                         </p>
                     </div>
 
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+                    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
                         {error && (
                             <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
                                 {error}
@@ -110,7 +118,6 @@ const LoginPage: React.FC = () => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                required
                                 className="w-full p-2 mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 autoComplete="email"
                             />
@@ -130,7 +137,6 @@ const LoginPage: React.FC = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                required
                                 className="w-full p-2 mt-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 autoComplete="current-password"
                             />
