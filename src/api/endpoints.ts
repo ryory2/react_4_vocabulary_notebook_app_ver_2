@@ -69,7 +69,7 @@ export const getReviewableWords = async (): Promise<Word[]> => {
 };
 
 export const submitReviewResult = async (wordId: string, isCorrect: boolean): Promise<void> => {
-    await apiClient.put(`/reviews/words/${wordId}/result`, { is_correct: isCorrect });
+    await apiClient.put(`/reviews/${wordId}/result`, { is_correct: isCorrect });
 };
 
 export const getReviewSummary = async (): Promise<ReviewSummary> => {
