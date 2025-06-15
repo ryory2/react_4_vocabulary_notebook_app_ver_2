@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiErrorMessage } from '../api/apiClient';
 import { loginUser } from '../api/endpoints';
 import { config } from '../config';
+
+const GUEST_EMAIL = 'example@example.com';
+const GUEST_PASSWORD = 'Example1@example.com';
 
 const LoginPage: React.FC = () => {
     const pageMeta = usePageMeta('login');
@@ -13,6 +16,8 @@ const LoginPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const formRef = useRef<HTMLFormElement>(null);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -41,15 +46,18 @@ const LoginPage: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
 
-        if (!email.trim() && !password.trim()) {
+        const currentEmail = email;
+        const currentPassword = password;
+
+        if (!currentEmail.trim() && !currentPassword.trim()) {
             setError('メールアドレスとパスワードを入力してください。');
-            return; // 処理を中断
+            return;
         }
-        if (!email.trim()) {
+        if (!currentEmail.trim()) {
             setError('メールアドレスを入力してください。');
             return;
         }
-        if (!password.trim()) {
+        if (!currentPassword.trim()) {
             setError('パスワードを入力してください。');
             return;
         }
@@ -57,7 +65,7 @@ const LoginPage: React.FC = () => {
 
         setIsSubmitting(true);
         try {
-            const response = await loginUser({ email, password });
+            const response = await loginUser({ email: currentEmail, password: currentPassword });
             login(response.access_token);
             navigate('/app/dashboard', { replace: true });
         } catch (err) {
@@ -82,6 +90,18 @@ const LoginPage: React.FC = () => {
         window.location.href = authUrl;
     };
 
+    const handleGuestLogin = () => {
+        // stateをゲスト情報で更新
+        setEmail(GUEST_EMAIL);
+        setPassword(GUEST_PASSWORD);
+
+        // stateの更新がDOMに反映されるのを待つため、少し遅延させる
+        setTimeout(() => {
+            // formの参照を使ってsubmitイベントをプログラムから発行する
+            formRef.current?.requestSubmit();
+        }, 0);
+    };
+
     return (
         <>
             {pageMeta}
@@ -97,7 +117,7 @@ const LoginPage: React.FC = () => {
                         </p>
                     </div>
 
-                    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+                    <form className="space-y-6" onSubmit={handleSubmit} noValidate ref={formRef}>
                         {error && (
                             <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
                                 {error}
@@ -142,13 +162,31 @@ const LoginPage: React.FC = () => {
                             />
                         </div>
 
-                        <div>
+                        <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                            <p>お試しで利用される方は、以下のゲストアカウントをご利用ください。</p>
+                            <p className="mt-1">
+                                <span className="font-semibold">Email:</span> {GUEST_EMAIL}
+                            </p>
+                            <p>
+                                <span className="font-semibold">Password:</span> {GUEST_PASSWORD}
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
                                 className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isSubmitting ? 'ログイン中...' : 'ログイン'}
+                                {isSubmitting && (email !== GUEST_EMAIL || password !== GUEST_PASSWORD) ? 'ログイン中...' : 'ログイン'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleGuestLogin}
+                                disabled={isSubmitting}
+                                className="w-full py-2 px-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting && email === GUEST_EMAIL && password === GUEST_PASSWORD ? 'ログイン中...' : 'ゲストとしてログイン'}
                             </button>
                         </div>
                     </form>
